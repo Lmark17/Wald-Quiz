@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wer rettet den Wald? – Quiz</title>
+<style>
+:root{--bg:#0f2a1d;--card:#fff;--ink:#1d2b24;--c0:#d32f4a;--c1:#2f6bd3;--c2:#d19a14;--c3:#3b8a12}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:radial-gradient(circle at 20% 0,#1d5a3a,var(--bg) 60%);color:#fff;display:flex;justify-content:center}
+#app{width:100%;max-width:720px;padding:16px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:1.1rem;margin:0;opacity:.8;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.card{background:var(--card);color:var(--ink);border-radius:12px;padding:18px;font-size:1.25rem;line-height:1.35;text-align:center}
+.card.left{text-align:left;font-size:1rem}
+input{width:100%;padding:14px;font-size:1.1rem;border-radius:10px;border:2px solid #ccd;margin-top:12px}
+button.main{width:100%;padding:16px;font-size:1.15rem;font-weight:700;border:0;border-radius:12px;background:#3b8a12;color:#fff;cursor:pointer;margin-top:12px}
+button.main:disabled{opacity:.5}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.answers{grid-template-columns:1fr}}
+.ans{display:flex;align-items:center;gap:12px;border:0;border-radius:12px;color:#fff;font-size:1.1rem;font-weight:600;padding:20px 14px;min-height:92px;text-align:left;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.ans:active{transform:translateY(2px)}
+.ans .s{font-size:1.6rem}
+.c0{background:var(--c0)}.c1{background:var(--c1)}.c2{background:var(--c2)}.c3{background:var(--c3)}
+.ans.dim{opacity:.35}.ans.right{outline:5px solid #fff}
+.bar{height:12px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden}
+.bar>div{height:100%;background:#ffd54a;width:100%}
+.pts{font-size:2.6rem;font-weight:800}
+.ok{color:#2e9b3e}.no{color:#c62839}
+table{width:100%;border-collapse:collapse;color:var(--ink);font-size:1.05rem}
+td,th{padding:8px 6px;text-align:left}
+tr:nth-child(even){background:#f0f4f1}
+td.n,th.n{text-align:right}
+.big table{font-size:1.5rem}
+.qrgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.qrbox{background:#fff;color:var(--ink);border-radius:12px;padding:14px;text-align:center}
+.qrbox .qr{display:flex;justify-content:center;margin:8px 0}
+.qrbox a{font-size:.75rem;word-break:break-all;color:#456}
+small{opacity:.75}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ===== KONFIGURATION ===== */
+// Firebase Realtime Database URL für die Live-Rangliste, z.B.
+// "https://mein-quiz-default-rtdb.europe-west1.firebasedatabase.app"
+// Leer lassen = nur lokale Punkte pro Gerät, keine gemeinsame Rangliste.
+const DB_URL = "https://wwm-odenwald-default-rtdb.europe-west1.firebasedatabase.app";
+const TIME = 20; // Sekunden pro Frage
+const MAXPTS = 1000; // maximale Punkte pro Frage
+
+// correct = Index der richtigen Antwort (0 = A, 1 = B, ...)
+const QUESTIONS = [
+  { q: "Der Fahrenbacher Wald wächst auf Buntsandstein. Welche Eigenschaft prägt die daraus entstehenden Waldböden?",
+    a: ["kalk- und basenreich", "basenarm, nährstoffarm, bodensauer", "tiefgründiger, nährstoffreicher Löss", "dauerhaft staunasse Moorböden"], correct: 1 },
+  { q: "Natura 2000 ist das größte Schutzgebietsnetzwerk der Welt. Wie viele Schutzgebiete umfasst es in der EU?",
+    a: ["über 2.700", "über 27.000"], correct: 1 },
+  { q: "Die EU-Waldstrategie 2030 ist Teil des European Green Deal. Wie viele Bäume sollen bis 2030 gepflanzt werden?",
+    a: ["300 Millionen", "3 Milliarden", "30 Milliarden", "300 Milliarden"], correct: 1 },
+  { q: "Wie viel Prozent der potenziellen europäischen Buchenwaldfläche liegen in Deutschland?",
+    a: ["6 Prozent", "26 Prozent"], correct: 1 }
+];
+/* ========================= */
+
+const app = document.getElementById('app');
+const P = new URLSearchParams(location.search);
+const SHAPES = ['▲','◆','●','■'];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+async function dbGet(p){
+  if(!DB_URL) return null;
+  try{ const r = await fetch(`${DB_URL}/${p}.json`); return r.ok ? await r.json() : null; }catch(e){ return null; }
+}
+async function dbPatch(p, o){
+  if(!DB_URL) return false;
+  try{ const r = await fetch(`${DB_URL}/${p}.json`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(o)}); return r.ok; }catch(e){ return false; }
+}
+const total = p => QUESTIONS.reduce((s, _, i) => s + (Number(p['q'+(i+1)]) || 0), 0);
+const baseUrl = () => location.origin + location.pathname;
+let myId = store.get('wald_id', null);
+if(!myId){ myId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36); store.set('wald_id', myId); }
+
+/* ---------- Teilnehmer-Ansicht ---------- */
+function playerView(n){
+  const Q = QUESTIONS[n-1];
+  if(!Q){ app.innerHTML = '<div class="card">Unbekannte Frage.</div>'; return; }
+  const scores = store.get('wald_scores', {});
+  if(scores[n] !== undefined){ return showResult(n); }
+  const started = store.get('wald_start_'+n, null);
+  if(started){ return runQuestion(n, started); }
+  app.innerHTML = `
+    <h1>Wer rettet den Wald? · Frage ${n} von ${QUESTIONS.length}</h1>
+    <div class="card left">
+      Du hast <b>${TIME} Sekunden</b>. Je schneller deine richtige Antwort, desto mehr Punkte (max. ${MAXPTS}).
+      <input id="nick" maxlength="20" placeholder="Dein Spitzname" value="${esc(store.get('wald_name',''))}">
+      <button class="main" id="go">Los geht's</button>
+    </div>`;
+  document.getElementById('go').onclick = () => {
+    const name = document.getElementById('nick').value.trim();
+    if(!name){ document.getElementById('nick').focus(); return; }
+    store.set('wald_name', name);
+    const t0 = Date.now();
+    store.set('wald_start_'+n, t0);
+    runQuestion(n, t0);
+  };
+}
+
+function runQuestion(n, t0){
+  const Q = QUESTIONS[n-1];
+  app.innerHTML = `
+    <h1>Frage ${n} von ${QUESTIONS.length}</h1>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="card">${esc(Q.q)}</div>
+    <div class="answers">
+      ${Q.a.map((t,i)=>`<button class="ans c${i}" data-i="${i}"><span class="s">${SHAPES[i]}</span><span>${esc(t)}</span></button>`).join('')}
+    </div>`;
+  let done = false;
+  const bar = document.getElementById('bar');
+  const tick = setInterval(() => {
+    const el = (Date.now() - t0) / 1000;
+    bar.style.width = Math.max(0, 100 - el / TIME * 100) + '%';
+    if(el >= TIME && !done){ finish(-1); }
+  }, 100);
+  const finish = async idx => {
+    if(done) return; done = true; clearInterval(tick);
+    const el = Math.min(TIME, (Date.now() - t0) / 1000);
+    const pts = idx === Q.correct ? Math.round(MAXPTS * (1 - (el / TIME) / 2)) : 0;
+    const sc = store.get('wald_scores', {}); sc[n] = pts; store.set('wald_scores', sc);
+    store.set('wald_choice_'+n, idx);
+    await dbPatch('players/'+myId, {name: store.get('wald_name','?'), ['q'+n]: pts});
+    showResult(n);
+  };
+  app.querySelectorAll('.ans').forEach(b => b.onclick = () => finish(Number(b.dataset.i)));
+  if((Date.now() - t0) / 1000 >= TIME) finish(-1);
+}
+
+async function showResult(n){
+  const Q = QUESTIONS[n-1];
+  const sc = store.get('wald_scores', {});
+  const pts = sc[n] || 0;
+  const choice = store.get('wald_choice_'+n, -1);
+  const good = choice === Q.correct;
+  const mine = Object.values(sc).reduce((a,b)=>a+b,0);
+  app.innerHTML = `
+    <h1>Frage ${n} von ${QUESTIONS.length}</h1>
+    <div class="card">
+      <div class="${good?'ok':'no'}" style="font-weight:800;font-size:1.6rem">${good ? 'Richtig!' : (choice === -1 ? 'Zeit abgelaufen' : 'Leider falsch')}</div>
+      <div class="pts">+${pts}</div>
+      <div style="font-size:1rem">Richtige Antwort: <b>${esc(Q.a[Q.correct])}</b></div>
+      <hr style="border:0;border-top:1px solid #dde">
+      <div style="font-size:1.05rem">Dein Gesamtstand: <b>${mine}</b> Punkte</div>
+      <div id="rank" style="font-size:1rem;margin-top:4px"></div>
+    </div>
+    <small>Warte auf die nächste Frage im Vortrag und scanne den nächsten QR-Code.</small>`;
+  const all = await dbGet('players');
+  if(all){
+    const list = Object.values(all).map(total).sort((a,b)=>b-a);
+    const rank = list.filter(t => t > mine).length + 1;
+    document.getElementById('rank').textContent = `Platz ${rank} von ${list.length}`;
+  }
+}
+
+/* ---------- Rangliste (Beamer) ---------- */
+function boardView(){
+  const only = Number(P.get('q')) || 0;
+  app.classList.add('big');
+  app.innerHTML = `<h1>Rangliste${only ? ' · Frage '+only : ' · Gesamt'}</h1><div class="card left" id="tbl">Lade …</div>`;
+  const draw = async () => {
+    const all = await dbGet('players');
+    const el = document.getElementById('tbl');
+    if(!DB_URL){ el.textContent = 'Keine Datenbank konfiguriert (DB_URL leer).'; return; }
+    if(!all){ el.textContent = 'Noch keine Teilnehmer.'; return; }
+    const rows = Object.values(all)
+      .map(p => ({name: p.name || '?', pts: only ? (Number(p['q'+only]) || 0) : total(p), answered: only ? p['q'+only] !== undefined : true}))
+      .filter(r => r.answered)
+      .sort((a,b) => b.pts - a.pts).slice(0, 10);
+    el.innerHTML = `<table><tr><th>#</th><th>Name</th><th class="n">Punkte</th></tr>` +
+      rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td class="n">${r.pts}</td></tr>`).join('') +
+      `</table><small>${Object.keys(all).length} Teilnehmende</small>`;
+  };
+  draw(); setInterval(draw, 3000);
+}
+
+/* ---------- QR-Codes für den Vortrag ---------- */
+function adminView(){
+  const items = QUESTIONS.map((_, i) => ({label: 'Frage ' + (i+1), url: `${baseUrl()}?q=${i+1}`}));
+  items.push({label: 'Rangliste (Beamer)', url: `${baseUrl()}?board=1`});
+  app.innerHTML = `<h1>QR-Codes</h1><div class="qrgrid">${items.map((it,i)=>`
+    <div class="qrbox"><b>${it.label}</b><div class="qr" id="qr${i}"></div><a href="${it.url}" target="_blank">${it.url}</a></div>`).join('')}</div>
+    <small>Rechtsklick auf einen QR-Code → „Bild speichern unter“, dann in die PowerPoint einfügen.</small>`;
+  items.forEach((it,i) => new QRCode(document.getElementById('qr'+i), {text: it.url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M}));
+}
+
+/* ---------- Routing ---------- */
+if(P.has('admin')) adminView();
+else if(P.has('board')) boardView();
+else if(P.get('q')) playerView(Number(P.get('q')));
+else app.innerHTML = '<h1>Wer rettet den Wald?</h1><div class="card">Scanne den QR-Code aus dem Vortrag, um mitzumachen.</div>';
+</script>
+</body>
+</html>
