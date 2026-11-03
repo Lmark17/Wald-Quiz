@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0f3a">
+<title>Wer rettet den Wald? – Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#070a2c; --navy2:#10175a; --violet:#3a2a9a;
+  --gold:#f2c14e; --gold2:#b8872a; --orange:#f08a1c;
+  --ok:#2fae4a; --no:#d6334b; --ink:#fff;
+  --tree:%23060924;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  min-height:100vh;color:var(--ink);font-family:'Montserrat',system-ui,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 0%, rgba(120,95,255,.55), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(40,120,80,.35), transparent 70%),
+    linear-gradient(180deg,#0d1250 0%,#080b33 55%,#050724 100%);
+  background-attachment:fixed;
+  display:flex;justify-content:center;position:relative;overflow-x:hidden;
+}
+/* Lichtstrahlen */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background:repeating-conic-gradient(from 0deg at 50% -10%, rgba(255,255,255,.55) 0deg 3deg, transparent 3deg 14deg);
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 55%);mask-image:linear-gradient(180deg,#000,transparent 55%);
+}
+/* Waldsilhouette */
+body::after{
+  content:"";position:fixed;left:0;right:0;bottom:0;height:150px;pointer-events:none;opacity:.95;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='150' viewBox='0 0 420 150' fill='%23050822'><g><path d='M30 150 L30 128 L10 128 L34 96 L18 96 L40 62 L26 62 L48 22 L70 62 L56 62 L78 96 L62 96 L86 128 L66 128 L66 150Z'/><path d='M130 150 L130 132 L114 132 L136 104 L122 104 L142 74 L130 74 L150 40 L170 74 L158 74 L178 104 L164 104 L186 132 L170 132 L170 150Z'/><path d='M240 150 L240 124 L216 124 L242 88 L224 88 L248 50 L232 50 L258 8 L284 50 L268 50 L292 88 L274 88 L300 124 L276 124 L276 150Z'/><path d='M340 150 L340 134 L322 134 L344 108 L330 108 L350 80 L338 80 L358 48 L378 80 L366 80 L386 108 L372 108 L394 134 L376 134 L376 150Z'/></g></svg>") repeat-x bottom/420px 150px;
+}
+#app{position:relative;z-index:1;width:100%;max-width:760px;padding:16px 16px 170px;display:flex;flex-direction:column;gap:16px}
+#app.big{max-width:900px}
+
+/* Kopfzeile */
+.top{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.emblem{width:46px;height:46px;flex:none;filter:drop-shadow(0 0 8px rgba(242,193,78,.5))}
+.chips{display:flex;gap:8px;flex:1;justify-content:center}
+.chip{width:34px;height:34px;display:grid;place-items:center;font-weight:800;font-size:.9rem;
+  border-radius:50%;border:2px solid var(--gold2);background:rgba(10,14,70,.8);color:var(--gold)}
+.chip.cur{background:var(--gold);color:#2a1d00;box-shadow:0 0 14px rgba(242,193,78,.8)}
+.chip.good{background:var(--ok);border-color:#8ee3a0;color:#fff}
+.chip.bad{background:var(--no);border-color:#f2a0ad;color:#fff}
+.ring{position:relative;width:58px;height:58px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .bg{stroke:rgba(255,255,255,.15)}
+.ring .fg{stroke:var(--gold);transition:stroke .3s;stroke-linecap:round}
+.ring .fg.low{stroke:var(--no)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:1.15rem;font-weight:800}
+
+/* Sechseck-Felder */
+.hex{
+  --cut:22px;position:relative;background:linear-gradient(180deg,#ffe9a8,var(--gold) 40%,var(--gold2));
+  clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% 50%,calc(100% - var(--cut)) 100%,var(--cut) 100%,0 50%);
+  padding:3px;
+}
+.hex>.in{
+  --cut:21px;display:block;width:100%;height:100%;
+  clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% 50%,calc(100% - var(--cut)) 100%,var(--cut) 100%,0 50%);
+  background:linear-gradient(180deg,#1b2390 0%,#0c1160 55%,#070a44 100%);
+}
+.q.hex{filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.q .in{padding:22px 38px;text-align:center;font-size:1.2rem;font-weight:600;line-height:1.4;min-height:96px;display:grid;place-items:center}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+@media(max-width:560px){.answers{grid-template-columns:1fr}.q .in{padding:18px 30px;font-size:1.05rem}}
+button.ans{border:0;margin:0;font:inherit;color:inherit;cursor:pointer;min-height:68px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.45));transition:transform .08s,filter .2s;text-align:left;display:block;padding:3px}
+button.ans:hover{filter:drop-shadow(0 0 10px rgba(242,193,78,.7))}
+button.ans:active{transform:scale(.985)}
+button.ans .in{display:flex;align-items:center;gap:12px;padding:14px 34px;font-weight:600;font-size:1.05rem;min-height:62px}
+button.ans .l{color:var(--orange);font-weight:800;font-size:1.15rem}
+button.ans.sel{background:linear-gradient(180deg,#ffd27a,var(--orange),#a8570a)}
+button.ans.sel .in{background:linear-gradient(180deg,#f7a43a,#e0791a 55%,#b85c0c);color:#1c1000}
+button.ans.sel .l{color:#1c1000}
+button.ans.right{background:linear-gradient(180deg,#c9f7d2,var(--ok),#1c7a32)}
+button.ans.right .in{background:linear-gradient(180deg,#3fc95c,#2a9a43 55%,#1d7a33)}
+button.ans.right .l{color:#fff}
+button.ans.wrong{background:linear-gradient(180deg,#ffc2cb,var(--no),#8e1a2c)}
+button.ans.wrong .in{background:linear-gradient(180deg,#ea4a62,#c12a41 55%,#8e1a2c)}
+button.ans.wrong .l{color:#fff}
+button.ans.dim{opacity:.45;filter:none}
+button.ans:disabled{cursor:default}
+
+/* Karten & Formulare */
+.panel{background:rgba(8,12,60,.82);border:2px solid var(--gold2);border-radius:18px;padding:22px;backdrop-filter:blur(4px);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.hero{text-align:center}
+.hero .emblem{width:110px;height:110px;margin:4px auto 10px;display:block}
+.hero h1{font-size:1.9rem;line-height:1.15;margin:0;font-weight:800;color:var(--gold);text-shadow:0 2px 0 #6a4a08,0 0 22px rgba(242,193,78,.5)}
+.hero .sub{margin:6px 0 16px;opacity:.85;font-weight:500}
+.rules{font-size:.95rem;line-height:1.55;opacity:.92;margin:0 0 6px}
+input{width:100%;padding:15px 16px;font:inherit;font-size:1.1rem;font-weight:600;border-radius:12px;border:2px solid var(--gold2);background:#070a3a;color:#fff;margin-top:12px;outline:none}
+input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(242,193,78,.3)}
+input::placeholder{color:rgba(255,255,255,.45)}
+button.main{width:100%;margin-top:14px;padding:16px;font:inherit;font-size:1.15rem;font-weight:800;letter-spacing:.03em;border:0;border-radius:999px;cursor:pointer;
+  color:#2a1d00;background:linear-gradient(180deg,#ffe9a8,var(--gold) 45%,var(--gold2));box-shadow:0 5px 0 #6a4a08,0 8px 18px rgba(0,0,0,.4)}
+button.main:active{transform:translateY(3px);box-shadow:0 2px 0 #6a4a08}
+
+/* Ergebnis */
+.result{text-align:center}
+.verdict{font-size:1.5rem;font-weight:800}
+.verdict.ok{color:#5be07a}.verdict.no{color:#ff7a8d}
+.pts{font-size:3.4rem;font-weight:800;color:var(--gold);text-shadow:0 0 24px rgba(242,193,78,.6);line-height:1.1}
+.pts small{font-size:1rem;opacity:.8;margin-left:6px;font-weight:600}
+.total{margin-top:6px;font-weight:600;opacity:.95}
+.rank{margin-top:4px;font-weight:700;color:var(--gold)}
+.hint{text-align:center;font-size:.9rem;opacity:.75;font-weight:500}
+
+/* Rangliste */
+.board h2{margin:0 0 4px;text-align:center;color:var(--gold);font-size:1.8rem;font-weight:800;text-shadow:0 0 20px rgba(242,193,78,.5)}
+.rows{display:flex;flex-direction:column;gap:10px}
+.rows .hex{filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+.row .in{display:flex;align-items:center;gap:16px;padding:12px 38px;font-weight:700;font-size:1.3rem}
+.row .rk{width:2ch;color:var(--orange);font-weight:800}
+.row .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .pt{color:var(--gold);font-variant-numeric:tabular-nums}
+.row.r1{background:linear-gradient(180deg,#fff3c4,#ffd24a,#c8941f)}
+.row.r1 .in{background:linear-gradient(180deg,#3b2f9a,#1c1670)}
+.row.r1 .rk{color:var(--gold)}
+.count{text-align:center;opacity:.8;font-weight:600}
+.big .row .in{font-size:1.6rem;padding:16px 46px}
+
+/* QR-Seite */
+.qrgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.qrbox{text-align:center}
+.qrbox b{color:var(--gold);font-size:1.1rem}
+.qrbox .qr{display:flex;justify-content:center;margin:10px 0;padding:12px;background:#fff;border-radius:12px}
+.qrbox a{font-size:.7rem;word-break:break-all;color:#aab4ff}
+.qrlink{color:inherit;text-decoration:none;display:block}
+.qrbox.single{max-width:420px;margin:0 auto;width:100%}
+.qrbox .qr img,.qrbox .qr canvas{max-width:100%;height:auto!important}
+.qrbox .url{display:block}
+.qrnav{display:flex;justify-content:space-between;margin-top:14px;font-weight:700}
+.qrnav a{color:var(--gold);text-decoration:none}
+.tag{text-align:center;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;font-size:.85rem}
+.chip.poll{border-style:dashed}
+.chip.pdone{background:var(--violet);color:#fff;border-color:var(--gold)}
+.chart{display:flex;gap:clamp(10px,3vw,28px);padding:56px 4px 0;align-items:flex-start}
+.col{flex:1;min-width:0;display:flex;flex-direction:column}
+.barwrap{position:relative;flex:none;height:min(26vh,230px);border-bottom:3px solid var(--gold2)}
+.bar2{position:absolute;left:8%;right:8%;bottom:0;height:0;border-radius:12px 12px 0 0;
+  box-shadow:0 0 20px rgba(255,255,255,.12),inset 0 3px 0 rgba(255,255,255,.35);
+  transition:height .9s cubic-bezier(.2,.8,.2,1)}
+.col.c0 .bar2{background:linear-gradient(180deg,#ef5670,#d32f4a)}
+.col.c1 .bar2{background:linear-gradient(180deg,#5b8cf0,#2f6bd3)}
+.col.c2 .bar2{background:linear-gradient(180deg,#f2b93a,#d19a14)}
+.col.c3 .bar2{background:linear-gradient(180deg,#5cb82a,#3b8a12)}
+.col.ok .bar2{outline:4px solid #fff;outline-offset:2px;box-shadow:0 0 34px rgba(255,255,255,.55),inset 0 3px 0 rgba(255,255,255,.35)}
+.val{position:absolute;left:-6px;right:-6px;bottom:0;text-align:center;transform:translateY(-10px);white-space:nowrap;
+  transition:bottom .9s cubic-bezier(.2,.8,.2,1)}
+.val b{font-size:1.5rem;font-weight:800;color:#fff}
+.val small{font-size:.95rem;font-weight:600;opacity:.8}
+.lab{padding-top:10px;text-align:center;font-weight:700;display:flex;flex-direction:column;gap:2px}
+.lab .l{color:var(--gold);font-size:1.4rem;font-weight:800}
+.lab .t{font-size:.95rem;font-weight:600;line-height:1.25}
+.lab .me{min-height:1.1em;font-size:.8rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.05em}
+.col.ok .lab .l{color:#5be07a}
+.big .chart{padding-top:56px}
+.big .barwrap{height:min(28vh,340px)}
+.big .lab .l{line-height:1.1}
+.big .val b{font-size:2.8rem}
+.big .val small{font-size:1.4rem}
+.big .lab .l{font-size:2.2rem}
+.big .lab .t{font-size:1.5rem}
+.cue{display:flex;gap:14px;align-items:flex-start;background:rgba(8,12,60,.82);border:2px solid var(--gold2);border-radius:16px;padding:14px}
+.cue .num{flex:none;min-width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.25rem;background:linear-gradient(180deg,#ffe9a8,var(--gold),var(--gold2));color:#2a1d00}
+.cue .cb{flex:1;min-width:0}
+.cue .kind{color:var(--gold);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+.cue .qt{margin:4px 0 10px;font-size:.95rem;line-height:1.35;opacity:.92}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{padding:8px 14px;border-radius:999px;border:1.5px solid var(--gold2);color:#fff;text-decoration:none;font-weight:700;font-size:.9rem;background:rgba(255,255,255,.06)}
+.pill.gold{background:linear-gradient(180deg,#ffe9a8,var(--gold),var(--gold2));color:#2a1d00;border:0}
+.lab .nms{font-size:.72rem;font-weight:500;opacity:.55;line-height:1.35;max-height:6.2em;overflow:hidden;margin-top:6px;word-break:break-word}
+.big .lab .nms{font-size:.9rem;max-height:6.2em;margin-top:4px}
+.big .count{margin-top:-4px}
+.rows.two{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.big .rows.two .row .in{font-size:1.15rem;padding:10px 34px}
+.strip{margin-top:8px;display:flex;justify-content:center;align-items:center;gap:8px;font-weight:800;font-size:1.05rem;color:#fff}
+.strip .ck{color:#5be07a}
+.ansgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:12px}
+.ac{border-radius:12px;overflow:hidden;box-shadow:0 4px 0 rgba(0,0,0,.28)}
+.ac.c0{background:#d32f4a}.ac.c1{background:#2f6bd3}.ac.c2{background:#d19a14}.ac.c3{background:#3b8a12}
+.ac.ok{outline:3px solid #fff;outline-offset:1px}
+.ac .at{display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:700;font-size:1.05rem}
+.ac .t{flex:1}
+.ac .me{font-size:.68rem;background:rgba(255,255,255,.28);border-radius:999px;padding:2px 8px;text-transform:uppercase;letter-spacing:.04em}
+.ac .me:empty{display:none}
+.ac .nms{padding:6px 14px 8px;background:rgba(0,0,0,.26);font-size:.72rem;font-weight:500;opacity:.9;line-height:1.35;max-height:6.2em;overflow:hidden;word-break:break-word}
+.ac .nms:empty{display:none}
+.big .strip{font-size:1.6rem}
+.big .ac .at{font-size:1.5rem;padding:16px 20px}
+.big .ac .nms{font-size:.9rem;padding:6px 20px 9px}
+.legend b{color:var(--gold)}
+@media (max-height:800px){
+  .big .barwrap{height:150px}.big .chart{padding-top:46px}.big .ac .at{padding:9px 16px;font-size:1.2rem}.big .strip{font-size:1.3rem}
+  .mrow{padding:3px 10px}.mrow .pt{font-size:.95rem}.mx{gap:4px 14px}.legend{font-size:.75rem}.board h2{font-size:1.4rem;margin:0}.board .emblem{width:34px;height:34px}
+}
+.legend{text-align:center;font-size:.85rem;opacity:.85;line-height:1.5}
+.mx{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.mx.one{grid-template-columns:1fr}
+.mrow{display:flex;align-items:center;gap:10px;background:rgba(8,12,60,.85);border:1.5px solid var(--gold2);border-radius:12px;padding:7px 12px;font-weight:700}
+.mrow.r1{border-color:var(--gold);background:linear-gradient(180deg,#3b2f9a,#1c1670)}
+.mrow .rk{width:2.2ch;color:var(--orange);font-weight:800}
+.mrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .cells{display:flex;gap:5px}
+.cell{font-size:.78rem;padding:3px 8px;border-radius:999px;font-weight:800;white-space:nowrap;border:1.5px solid transparent}
+.cell i{font-style:normal;opacity:.75;margin-right:5px;font-weight:700}
+.cell.ok{background:rgba(47,174,74,.25);color:#7ff09a;border-color:#2fae4a}
+.cell.bad{background:rgba(214,51,75,.25);color:#ff8a9b;border-color:#d6334b}
+.cell.na{color:rgba(255,255,255,.4);border-color:rgba(255,255,255,.2)}
+.cell.poll{border-style:dashed}
+.mrow .dl{min-width:4.6ch;text-align:right;color:#7ff09a;font-weight:800;font-size:.95rem;font-variant-numeric:tabular-nums}
+.mrow .dl.z{color:rgba(255,255,255,.35)}
+.mrow .pt{min-width:4.5ch;text-align:right;color:var(--gold);font-variant-numeric:tabular-nums;font-size:1.1rem}
+h1.plain{margin:0;color:var(--gold);font-size:1.4rem;font-weight:800}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ===== KONFIGURATION ===== */
+const DB_URL = "https://wwm-odenwald-default-rtdb.europe-west1.firebasedatabase.app";
+const TIME = 20;     // Sekunden pro Frage
+const MAXPTS = 1000; // maximale Punkte pro Frage
+const POLL_SHOW_CORRECT = true; // Stimmungsbild: nach der Abstimmung die richtige Antwort auf dem Handy markieren
+
+// correct = Index der richtigen Antwort (0 = A, 1 = B, ...)
+// type: 'poll' = Stimmungsbild (Balkendiagramm, keine Punkte); skript = Nummer der Frage im Wer-wird-Millionär-Skript
+// ohne type = Gewinnspielfrage (mit Punkten, wer richtig tippt kann etwas gewinnen)
+const QUESTIONS = [
+  { q: "Der Fahrenbacher Wald wächst auf Buntsandstein. Welche Eigenschaft prägt die daraus entstehenden Waldböden?",
+    a: ["kalk- und basenreich", "basenarm, nährstoffarm, bodensauer", "tiefgründiger, nährstoffreicher Löss", "dauerhaft staunasse Moorböden"], correct: 1 },
+  { q: "Natura 2000 ist das größte Schutzgebietsnetzwerk der Welt. Wie viele Schutzgebiete umfasst es in der EU?",
+    a: ["über 2.700", "über 27.000"], correct: 1, type: "poll", skript: 3 },
+  { q: "Die EU-Waldstrategie 2030 ist Teil des European Green Deal. Wie viele Bäume sollen bis 2030 gepflanzt werden?",
+    a: ["300 Millionen", "3 Milliarden", "30 Milliarden", "300 Milliarden"], correct: 1 },
+  { q: "Wie viel Prozent der potenziellen europäischen Buchenwaldfläche liegen in Deutschland?",
+    a: ["6 Prozent", "26 Prozent"], correct: 1, type: "poll", skript: 15 }
+];
+/* ========================= */
+
+const app = document.getElementById('app');
+const P = new URLSearchParams(location.search);
+const LETTERS = ['A','B','C','D'];
+const SHAPES = ['▲','◆','●','■'];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+async function dbGet(p){
+  if(!DB_URL) return null;
+  try{ const r = await fetch(`${DB_URL}/${p}.json`); return r.ok ? await r.json() : null; }catch(e){ return null; }
+}
+async function dbPatch(p, o){
+  if(!DB_URL) return false;
+  try{ const r = await fetch(`${DB_URL}/${p}.json`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(o)}); return r.ok; }catch(e){ return false; }
+}
+const total = p => QUESTIONS.reduce((s, Q, i) => Q.type === 'poll' ? s : s + (Number(p['q'+(i+1)]) || 0), 0);
+const gwNo = i => QUESTIONS.slice(0, i+1).filter(Q => Q.type !== 'poll').length;
+const qName = i => QUESTIONS[i].type === 'poll' ? `Stimmungsbild · Frage ${QUESTIONS[i].skript}` : `Gewinnspiel ${gwNo(i)}`;
+const qChip = i => QUESTIONS[i].type === 'poll' ? QUESTIONS[i].skript : 'G' + gwNo(i);
+const baseUrl = () => location.origin + location.pathname;
+let myId = store.get('wald_id', null);
+if(!myId){ myId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36); store.set('wald_id', myId); }
+
+/* ---------- Bausteine ---------- */
+const EMBLEM = `<svg class="emblem" viewBox="0 0 100 100" aria-hidden="true">
+  <defs>
+    <radialGradient id="eg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#4b3bd0"/><stop offset="1" stop-color="#0a0e50"/></radialGradient>
+    <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset=".5" stop-color="#f2c14e"/><stop offset="1" stop-color="#b8872a"/></linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="47" fill="url(#gg)"/>
+  <circle cx="50" cy="50" r="42" fill="url(#eg)"/>
+  <circle cx="50" cy="50" r="36" fill="none" stroke="url(#gg)" stroke-width="1.5" stroke-dasharray="2 3"/>
+  <g fill="url(#gg)">
+    <path d="M50 18 L62 36 L55 36 L68 54 L59 54 L72 72 L28 72 L41 54 L32 54 L45 36 L38 36 Z"/>
+    <rect x="46.5" y="72" width="7" height="10" rx="1"/>
+  </g>
+</svg>`;
+function header(n, ring=true){
+  const sc = store.get('wald_scores', {}), vt = store.get('wald_votes', {});
+  const chips = QUESTIONS.map((q,i) => {
+    const k = i+1; let c = '';
+    if(q.type === 'poll') c = 'poll' + (k === n ? ' cur' : (vt[k] !== undefined ? ' pdone' : ''));
+    else if(k === n) c = 'cur';
+    else if(sc[k] !== undefined) c = sc[k] > 0 ? 'good' : 'bad';
+    return `<div class="chip ${c}">${qChip(i)}</div>`;
+  }).join('');
+  const ringHtml = ring
+    ? `<div class="ring"><svg viewBox="0 0 60 60"><circle class="bg" cx="30" cy="30" r="26" fill="none" stroke-width="5"/><circle id="fg" class="fg" cx="30" cy="30" r="26" fill="none" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="0"/></svg><b id="sec">${TIME}</b></div>`
+    : `<span style="width:58px;flex:none"></span>`;
+  return `<div class="top">${EMBLEM}<div class="chips">${chips}</div>${ringHtml}</div>`;
+}
+const hex = (cls, inner, tag='div', attrs='') => `<${tag} class="hex ${cls}" ${attrs}><span class="in">${inner}</span></${tag}>`;
+
+/* ---------- Teilnehmer-Ansicht ---------- */
+function playerView(n){
+  const Q = QUESTIONS[n-1];
+  if(!Q){ app.innerHTML = `<div class="panel hero"><h1>Unbekannte Frage</h1></div>`; return; }
+  if(Q.type === 'poll') return pollView(n);
+  const scores = store.get('wald_scores', {});
+  if(scores[n] !== undefined){ return showResult(n); }
+  const started = store.get('wald_start_'+n, null);
+  if(started){ return runQuestion(n, started); }
+  app.innerHTML = `
+    <div class="panel hero">
+      ${EMBLEM}
+      <h1>Wer rettet<br>den Wald?</h1>
+      <p class="sub">Fahrenbacher Wald · Odenwald &nbsp;|&nbsp; ${qName(n-1)}</p>
+      <p class="rules">Du hast <b>${TIME} Sekunden</b>. Je schneller deine richtige Antwort, desto mehr Punkte (bis zu ${MAXPTS}). Wer richtig tippt, hat Chancen auf einen kleinen Gewinn.</p>
+      <input id="nick" maxlength="20" placeholder="Dein Spitzname" value="${esc(store.get('wald_name',''))}" autocomplete="off">
+      <button class="main" id="go">Los geht's</button>
+    </div>`;
+  document.getElementById('go').onclick = () => {
+    const name = document.getElementById('nick').value.trim();
+    if(!name){ document.getElementById('nick').focus(); return; }
+    store.set('wald_name', name);
+    const t0 = Date.now();
+    store.set('wald_start_'+n, t0);
+    runQuestion(n, t0);
+  };
+}
+
+function runQuestion(n, t0){
+  const Q = QUESTIONS[n-1];
+  app.innerHTML = `
+    ${header(n)}
+    ${hex('q', esc(Q.q))}
+    <div class="answers">
+      ${Q.a.map((t,i)=>hex('ans', `<span class="l">${LETTERS[i]}:</span><span>${esc(t)}</span>`, 'button', `data-i="${i}"`)).join('')}
+    </div>`;
+  let done = false;
+  const fg = document.getElementById('fg'), sec = document.getElementById('sec');
+  const CIRC = 163.4;
+  const tick = setInterval(() => {
+    const el = (Date.now() - t0) / 1000, left = Math.max(0, TIME - el);
+    fg.style.strokeDashoffset = String(CIRC * (1 - left / TIME));
+    sec.textContent = Math.ceil(left);
+    fg.classList.toggle('low', left <= 5);
+    if(el >= TIME && !done){ finish(-1); }
+  }, 100);
+  const finish = async idx => {
+    if(done) return; done = true; clearInterval(tick);
+    const el = Math.min(TIME, (Date.now() - t0) / 1000);
+    const pts = idx === Q.correct ? Math.round(MAXPTS * (1 - (el / TIME) / 2)) : 0;
+    const sc = store.get('wald_scores', {}); sc[n] = pts; store.set('wald_scores', sc);
+    store.set('wald_choice_'+n, idx);
+    app.querySelectorAll('button.ans').forEach(b => { b.disabled = true; if(Number(b.dataset.i) === idx) b.classList.add('sel'); });
+    await Promise.all([
+      dbPatch('players/'+myId, {name: store.get('wald_name','?'), ['q'+n]: pts}),
+      new Promise(r => setTimeout(r, idx >= 0 ? 1000 : 0))
+    ]);
+    showResult(n);
+  };
+  app.querySelectorAll('button.ans').forEach(b => b.onclick = () => finish(Number(b.dataset.i)));
+  if((Date.now() - t0) / 1000 >= TIME) finish(-1);
+}
+
+async function showResult(n){
+  const Q = QUESTIONS[n-1];
+  const sc = store.get('wald_scores', {});
+  const pts = sc[n] || 0;
+  const choice = store.get('wald_choice_'+n, -1);
+  const good = choice === Q.correct;
+  const mine = Object.values(sc).reduce((a,b)=>a+b,0);
+  const answers = Q.a.map((t,i) => {
+    let c = 'dim';
+    if(i === Q.correct) c = 'right';
+    else if(i === choice) c = 'wrong';
+    return hex('ans '+c, `<span class="l">${LETTERS[i]}:</span><span>${esc(t)}</span>`, 'button', 'disabled');
+  }).join('');
+  app.innerHTML = `
+    ${header(n).replace(/<div class="ring">.*?<\/div>\s*<\/div>$/s, '</div>')}
+    ${hex('q', esc(Q.q))}
+    <div class="answers">${answers}</div>
+    <div class="panel result">
+      <div class="verdict ${good?'ok':'no'}">${good ? 'Richtig!' : (choice === -1 ? 'Zeit abgelaufen' : 'Leider falsch')}</div>
+      <div class="pts" id="pts">+0<small>Punkte</small></div>
+      <div class="total">Dein Gesamtstand: <b>${mine}</b> Punkte</div>
+      <div class="rank" id="rank"></div>
+    </div>
+    <div class="hint">Warte auf die nächste Frage im Vortrag und scanne den nächsten QR-Code.</div>`;
+  // Punkte hochzählen
+  const el = document.getElementById('pts'), t0 = performance.now();
+  (function step(t){
+    const k = Math.min(1, (t - t0) / 900);
+    el.innerHTML = `+${Math.round(pts * (1 - Math.pow(1 - k, 3)))}<small>Punkte</small>`;
+    if(k < 1) requestAnimationFrame(step);
+  })(t0);
+  const all = await dbGet('players');
+  if(all){
+    const list = Object.values(all).map(total).sort((a,b)=>b-a);
+    const rank = list.filter(t => t > mine).length + 1;
+    const r = document.getElementById('rank');
+    if(r) r.textContent = `Platz ${rank} von ${list.length}`;
+  }
+}
+
+/* ---------- Stimmungsbild (ohne Punkte) ---------- */
+function chartHtml(Q){
+  return `<div class="chart" id="chart">${Q.a.map((t,i)=>`<div class="col c${i}"><div class="barwrap"><div class="bar2"></div><div class="val"><b>0%</b></div></div><div class="strip"><span class="sh">${SHAPES[i]}</span><span class="cnt">0</span><span class="ck"></span></div></div>`).join('')}</div>
+  <div class="ansgrid" id="ansgrid">${Q.a.map((t,i)=>`<div class="ac c${i}"><div class="at"><span class="sh">${SHAPES[i]}</span><span class="t">${esc(t)}</span><span class="me"></span></div><div class="nms"></div></div>`).join('')}</div>`;
+}
+function nameList(list){
+  const L = list.slice().sort((a,b) => a.localeCompare(b, 'de')), MAX = 24;
+  return L.slice(0, MAX).join(' · ') + (L.length > MAX ? ` · +${L.length - MAX}` : '');
+}
+function chartUpdate(Q, votes, choice, showCorrect, showNames){
+  const counts = Q.a.map(() => 0), names = Q.a.map(() => []);
+  Object.values(votes || {}).forEach(v => {
+    const obj = v !== null && typeof v === 'object', i = obj ? v.i : v;
+    if(counts[i] === undefined) return;
+    counts[i]++; if(obj && v.n) names[i].push(String(v.n));
+  });
+  const sum = counts.reduce((a,b) => a+b, 0);
+  const chart = document.getElementById('chart');
+  if(!chart) return sum;
+  void chart.offsetHeight; // damit die Säulen beim ersten Mal von 0 hochwachsen
+  const acs = document.querySelectorAll('#ansgrid .ac');
+  chart.querySelectorAll('.col').forEach((col, i) => {
+    const pct = sum ? Math.round(counts[i] / sum * 100) : 0, ok = !!showCorrect && i === Q.correct;
+    col.querySelector('.bar2').style.height = pct + '%';
+    col.querySelector('.val').style.bottom = pct + '%';
+    col.querySelector('.val b').textContent = pct + '%';
+    col.querySelector('.cnt').textContent = counts[i];
+    col.querySelector('.ck').textContent = ok ? '✓' : '';
+    col.classList.toggle('ok', ok);
+    const ac = acs[i];
+    ac.classList.toggle('ok', ok);
+    ac.querySelector('.me').textContent = i === choice ? 'Deine Wahl' : '';
+    ac.querySelector('.nms').textContent = showNames ? nameList(names[i]) : '';
+  });
+  return sum;
+}
+function nameGate(next){
+  app.innerHTML = `<div class="panel hero">${EMBLEM}<h1>Wer rettet<br>den Wald?</h1><p class="sub">Fahrenbacher Wald · Odenwald</p>
+    <p class="rules">Wie heißt du? Dein Spitzname erscheint klein im Diagramm und in der Gewinnerliste.</p>
+    <input id="nick" maxlength="20" placeholder="Dein Spitzname" autocomplete="off">
+    <button class="main" id="go">Weiter</button></div>`;
+  document.getElementById('go').onclick = () => {
+    const name = document.getElementById('nick').value.trim();
+    if(!name){ document.getElementById('nick').focus(); return; }
+    store.set('wald_name', name); next();
+  };
+}
+function pollView(n){
+  const Q = QUESTIONS[n-1];
+  if(store.get('wald_votes', {})[n] !== undefined) return pollResult(n);
+  if(!store.get('wald_name', '')) return nameGate(() => pollView(n));
+  app.innerHTML = `
+    ${header(n, false)}
+    <div class="tag">${qName(n-1)} · keine Punkte</div>
+    ${hex('q', esc(Q.q))}
+    <div class="answers">
+      ${Q.a.map((t,i)=>hex('ans', `<span class="l">${LETTERS[i]}:</span><span>${esc(t)}</span>`, 'button', `data-i="${i}"`)).join('')}
+    </div>`;
+  let done = false;
+  app.querySelectorAll('button.ans').forEach(b => b.onclick = async () => {
+    if(done) return; done = true;
+    const idx = Number(b.dataset.i);
+    const vt = store.get('wald_votes', {}); vt[n] = idx; store.set('wald_votes', vt);
+    app.querySelectorAll('button.ans').forEach(x => { x.disabled = true; if(x === b) x.classList.add('sel'); });
+    await Promise.all([dbPatch('votes/q'+n, {[myId]: {i: idx, n: store.get('wald_name','?')}}), new Promise(r => setTimeout(r, 700))]);
+    pollResult(n);
+  });
+}
+let pollTimer = null;
+async function pollResult(n){
+  clearInterval(pollTimer);
+  const Q = QUESTIONS[n-1];
+  const choice = store.get('wald_votes', {})[n];
+  app.innerHTML = `
+    ${header(n, false)}
+    <div class="tag">${qName(n-1)} · Danke fürs Mitmachen</div>
+    ${hex('q', esc(Q.q))}
+    ${chartHtml(Q)}
+    <div class="count" id="cnt"></div>
+    <div class="hint">Das Stimmungsbild gibt keine Punkte. Warte auf die nächste Frage im Vortrag.</div>`;
+  const draw = async () => {
+    if(!document.getElementById('chart')){ clearInterval(pollTimer); return; }
+    const db = await dbGet('votes/q'+n);
+    const sum = chartUpdate(Q, Object.assign({}, db || {}, {[myId]: {i: choice, n: store.get('wald_name','?')}}), choice, POLL_SHOW_CORRECT, false);
+    document.getElementById('cnt').textContent = sum + (sum === 1 ? ' Stimme' : ' Stimmen');
+  };
+  await draw();
+  pollTimer = setInterval(draw, 3000);
+}
+function pollBoard(n){
+  const Q = QUESTIONS[n-1];
+  app.classList.add('big');
+  app.innerHTML = `<div class="tag">${qName(n-1)} · Live</div>
+    ${hex('q', esc(Q.q))}
+    ${chartHtml(Q)}<div class="count" id="cnt"></div>`;
+  const draw = async () => {
+    if(!DB_URL){ document.getElementById('cnt').textContent = 'Keine Datenbank konfiguriert.'; return; }
+    const sum = chartUpdate(Q, await dbGet('votes/q'+n), -1, P.has('reveal'), true);
+    document.getElementById('cnt').textContent = sum + (sum === 1 ? ' Stimme' : ' Stimmen');
+  };
+  draw(); setInterval(draw, 2000);
+}
+
+/* ---------- Rangliste (Beamer) ---------- */
+function totalBoard(){
+  app.classList.add('big');
+  const upto = Number(P.get('upto')) || 0; // optional: Stand nach Frage-Nr. (z.B. &upto=1)
+  app.innerHTML = `<div class="board"><div style="display:flex;justify-content:center;margin-bottom:6px">${EMBLEM}</div>
+    <h2>Gesamtwertung · Gewinnspiele${upto && QUESTIONS[upto-1] ? ' · nach ' + qName(upto-1) : ''}</h2></div>
+    <div class="legend">${QUESTIONS.map((Q,i) => `<b>${qChip(i)}</b> = ${Q.type === 'poll' ? 'Stimmungsbild (zählt nicht)' : 'Gewinnspiel (Punkte)'}`).join(' &nbsp;·&nbsp; ')}<br>✓ richtig · ✗ falsch · – nicht beantwortet<br><span id="lg2"></span></div>
+    <div class="mx" id="mx"></div><div class="count" id="cnt"></div>`;
+  const draw = async () => {
+    const mx = document.getElementById('mx'), cnt = document.getElementById('cnt');
+    if(!DB_URL){ mx.innerHTML = '<div class="panel hero">Keine Datenbank konfiguriert.</div>'; return; }
+    const [pl, vo] = await Promise.all([dbGet('players'), dbGet('votes')]);
+    const people = {};
+    const who = id => people[id] || (people[id] = {name: '', pl: {}, vt: {}});
+    Object.entries(pl || {}).forEach(([id, p]) => { const w = who(id); w.name = p.name || w.name; w.pl = p; });
+    QUESTIONS.forEach((Q, i) => {
+      if(Q.type !== 'poll') return;
+      Object.entries((vo || {})['q' + (i+1)] || {}).forEach(([id, v]) => {
+        const w = who(id), obj = v !== null && typeof v === 'object';
+        w.vt[i] = obj ? v.i : v; if(obj && v.n && !w.name) w.name = v.n;
+      });
+    });
+    // Welche Gewinnspiele zählen, und welches war zuletzt dran (für das "+")
+    const active = QUESTIONS.map((_, i) => i).filter(i => QUESTIONS[i].type !== 'poll' && (!upto || i+1 <= upto));
+    const answered = active.filter(i => Object.values(pl || {}).some(p => p['q' + (i+1)] !== undefined));
+    const lastI = answered.length ? answered[answered.length - 1] : -1;
+    const totalOf = p => active.reduce((sum, i) => sum + (Number(p['q' + (i+1)]) || 0), 0);
+    document.getElementById('lg2').innerHTML = lastI >= 0 ? `<b>+Zahl</b> = Punkte aus ${qChip(lastI)} (zuletzt gespielte Gewinnspielfrage)` : '';
+    const rows = Object.values(people).map(w => {
+      const pts = totalOf(w.pl), dl = lastI >= 0 ? (Number(w.pl['q' + (lastI+1)]) || 0) : 0;
+      const cells = QUESTIONS.map((Q, i) => {
+        let cls = 'na', txt = '–';
+        if(Q.type === 'poll'){
+          if(w.vt[i] !== undefined){ const good = w.vt[i] === Q.correct; cls = good ? 'ok' : 'bad'; txt = good ? '✓' : '✗'; }
+        } else if(!upto || i+1 <= upto){
+          const v = w.pl['q' + (i+1)];
+          if(v !== undefined){ cls = Number(v) > 0 ? 'ok' : 'bad'; txt = Number(v) > 0 ? '✓ ' + v : '✗'; }
+        }
+        return `<span class="cell ${cls}${Q.type === 'poll' ? ' poll' : ''}"><i>${qChip(i)}</i>${txt}</span>`;
+      }).join('');
+      return {name: w.name || '?', pts, dl, cells};
+    }).sort((a,b) => b.pts - a.pts || a.name.localeCompare(b.name, 'de')).slice(0, 40);
+    mx.className = 'mx' + (rows.length <= 12 ? ' one' : '');
+    mx.innerHTML = rows.length
+      ? rows.map((r,i) => `<div class="mrow${i === 0 && r.pts > 0 ? ' r1' : ''}"><span class="rk">${i+1}</span><span class="nm">${esc(r.name)}</span><span class="cells">${r.cells}</span><span class="pt">${r.pts}</span><span class="dl${r.dl > 0 ? '' : ' z'}">${lastI >= 0 ? '+' + r.dl : ''}</span></div>`).join('')
+      : '<div class="panel hero">Noch keine Teilnehmer.</div>';
+    cnt.textContent = Object.keys(people).length + ' Teilnehmende';
+  };
+  draw(); setInterval(draw, 3000);
+}
+function boardView(){
+  const only = Number(P.get('q')) || 0;
+  if(only && QUESTIONS[only-1] && QUESTIONS[only-1].type === 'poll') return pollBoard(only);
+  if(!only) return totalBoard();
+  app.classList.add('big');
+  const title = only && QUESTIONS[only-1] ? `Richtig getippt · ${qName(only-1)}` : 'Gesamtwertung · Gewinnspiele';
+  app.innerHTML = `<div class="board"><div style="display:flex;justify-content:center;margin-bottom:6px">${EMBLEM}</div>
+    <h2>${title}</h2></div>
+    <div class="rows" id="tbl"></div><div class="count" id="cnt"></div>`;
+  const draw = async () => {
+    const all = await dbGet('players');
+    const el = document.getElementById('tbl'), cnt = document.getElementById('cnt');
+    if(!DB_URL){ el.innerHTML = '<div class="panel hero">Keine Datenbank konfiguriert (DB_URL leer).</div>'; return; }
+    if(!all){ el.innerHTML = '<div class="panel hero">Noch keine Teilnehmer.</div>'; cnt.textContent = ''; return; }
+    const people = Object.values(all);
+    const rows = people
+      .map(p => ({name: p.name || '?', pts: only ? (Number(p['q'+only]) || 0) : total(p)}))
+      .filter(r => r.pts > 0)
+      .sort((a,b) => b.pts - a.pts).slice(0, 40);
+    el.className = 'rows' + (rows.length > 10 ? ' two' : '');
+    el.innerHTML = rows.length
+      ? rows.map((r,i)=>hex('row'+(i===0?' r1':''), `<span class="rk">${i+1}</span><span class="nm">${esc(r.name)}</span><span class="pt">${r.pts}</span>`)).join('')
+      : '<div class="panel hero">Noch niemand richtig getippt.</div>';
+    cnt.textContent = `${rows.length} richtig · ${people.length} Teilnehmende`;
+  };
+  draw(); setInterval(draw, 3000);
+}
+
+/* ---------- QR-Codes für den Vortrag ---------- */
+function qrItems(){
+  const it = QUESTIONS.map((Q, i) => ({label: qName(i), url: `${baseUrl()}?q=${i+1}`}));
+  it.push({label: 'Rangliste (Beamer)', url: `${baseUrl()}?board=1`});
+  return it;
+}
+function adminView(){
+  const card = i => {
+    const Q = QUESTIONS[i], poll = Q.type === 'poll';
+    const links = poll
+      ? `<a class="pill" href="?board=1&q=${i+1}">Balkendiagramm live</a><a class="pill" href="?board=1&q=${i+1}&reveal=1">mit Lösung</a>`
+      : `<a class="pill" href="?board=1&q=${i+1}">Richtig getippt</a>`;
+    return `<div class="cue"><div class="num">${qChip(i)}</div><div class="cb">
+      <div class="kind">${poll ? 'Stimmungsbild · Balkendiagramm' : 'Gewinnspiel · mit Punkten'}</div>
+      <div class="qt">${esc(Q.q)}</div>
+      <div class="pills"><a class="pill gold" href="?qr=${i+1}">QR-Code</a>${links}</div></div></div>`;
+  };
+  const ids = QUESTIONS.map((_, i) => i);
+  const polls = ids.filter(i => QUESTIONS[i].type === 'poll').sort((a,b) => QUESTIONS[a].skript - QUESTIONS[b].skript);
+  const gws = ids.filter(i => QUESTIONS[i].type !== 'poll');
+  app.innerHTML = `<div style="display:flex;justify-content:center">${EMBLEM}</div>
+    <h1 class="plain" style="text-align:center">Regieplan</h1>
+    <div class="tag">Stimmungsbild · Balkendiagramm (Skript-Fragen ${polls.map(i => QUESTIONS[i].skript).join(' und ')})</div>
+    ${polls.map(card).join('')}
+    <div class="tag">Gewinnspiel · Punkte zählen</div>
+    ${gws.map(card).join('')}
+    <div class="tag">Auswertung</div>
+    <div class="cue"><div class="num">&#9733;</div><div class="cb">
+      <div class="kind">Gewinner</div>
+      <div class="qt">Alle Teilnehmenden mit Punkten und ✓/✗ pro Frage.</div>
+      <div class="pills"><a class="pill gold" href="?board=1">Gesamtwertung</a><a class="pill" href="?qr=${QUESTIONS.length+1}">QR-Code Rangliste</a></div></div></div>`;
+}
+function qrView(k){
+  const items = qrItems(), it = items[k-1];
+  if(!it){ adminView(); return; }
+  const prev = k > 1 ? `<a href="?qr=${k-1}">‹ Zurück</a>` : '<span></span>';
+  const next = k < items.length ? `<a href="?qr=${k+1}">Weiter ›</a>` : '<span></span>';
+  app.innerHTML = `<div class="panel qrbox single">
+      <b>${it.label}</b>
+      <div class="qr" id="qr"></div>
+      <a class="url" href="${it.url}" target="_blank">${it.url}</a>
+      <button class="main" id="dl">Als PNG speichern</button>
+      <div class="qrnav">${prev}<a href="?admin">Übersicht</a>${next}</div>
+    </div>`;
+  new QRCode(document.getElementById('qr'), {text: it.url, width: 480, height: 480, correctLevel: QRCode.CorrectLevel.M});
+  document.getElementById('dl').onclick = () => {
+    const c = document.querySelector('#qr canvas'), im = document.querySelector('#qr img');
+    const href = c ? c.toDataURL('image/png') : (im ? im.src : null);
+    if(!href) return;
+    const a = document.createElement('a');
+    a.href = href; a.download = 'qr-' + (k <= QUESTIONS.length ? 'frage-' + k : 'rangliste') + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+}
+
+/* ---------- Routing ---------- */
+if(P.has('admin')) adminView();
+else if(P.has('board')) boardView();
+else if(P.has('qr')) qrView(Number(P.get('qr')));
+else if(P.get('q')) playerView(Number(P.get('q')));
+else app.innerHTML = `<div class="panel hero">${EMBLEM}<h1>Wer rettet<br>den Wald?</h1><p class="sub">Fahrenbacher Wald · Odenwald</p><p class="rules">Scanne den QR-Code aus dem Vortrag, um mitzumachen.</p></div>`;
+</script>
+</body>
+</html>
